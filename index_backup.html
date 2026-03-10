@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCure  - Smart Health Assistant</title>
+    <meta name="description" content="Advanced AI-powered health assistant for symptoms check and doctor booking.">
+
+    <!-- Fonts: Inter for Clean Professional Look -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons: FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet.js Maps (Free, No API Key) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* --- 1. VARIABLES & RESET --- */
+        :root {
+            --primary: #007bff;
+            /* Medical Blue */
+            --primary-dark: #0056b3;
+            --secondary: #00d2d3;
+            /* Teal Accent */
+            --success: #2ecc71;
+            --danger: #ff6b6b;
+            --warning: #f1c40f;
+            --dark: #2c3e50;
+            --light: #f8f9fa;
+            --white: #ffffff;
+            --gray: #95a5a6;
+
+            --font-headings: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 15px 35px rgba(0, 0, 0, 0.12);
+
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: #f0f2f5;
+            color: var(--dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        img {
+            max-width: 100%;
+            display: block;
+        }
+
+        /* --- 2. UNIVERSAL COMPONENTS --- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5253);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-family: var(--font-headings);
+            font-size: 2.2rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--gray);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- 3. NAVBAR --- */
+        .navbar {
+            background: var(--white);
+            height: 70px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 5%;
+            box-shadow: var(--shadow-sm);
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-family: var(--font-headings);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        .nav-item {
+            font-weight: 500;
+            color: var(--gray);
+            font-size: 0.95rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+
+        .nav-item:hover::after,
+        .nav-item.active::after {
+            width: 100%;
+        }
+
+        /* --- 4. NAVIGATION CONTROLS (BACK BTN) --- */
+        .nav-controls {
+            position: sticky;
+            top: 70px;
+            /* Below Navbar */
+            z-index: 900;
+            background: #f0f2f5;
+            /* Match body bg to hide scroll content behind */
+            padding: 15px 0;
+            margin-bottom: 10px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--dark);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 16px;
+            background: var(--white);
+            border-radius: 30px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .back-btn:hover {
+            color: var(--primary);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* --- 5. VIEWS & ANIMATIONS --- */
+        .view-section {
+            display: none;
+            padding-top: 100px;
+            /* Space for fixed navbar */
+            padding-bottom: 60px;
+            min-height: 100vh;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- 6. HOME DASHBOARD --- */
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(180deg, rgba(0, 123, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 0 0 50px 50px;
+            margin-bottom: 40px;
+        }
+
+        .hero-title {
+            font-family: var(--font-headings);
+            font-size: 3rem;
+            color: var(--dark);
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .hero-text {
+            font-size: 1.2rem;
+            color: var(--gray);
+            margin-bottom: 30px;
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .service-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .service-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(0, 123, 255, 0.1);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 20px;
+            transition: .3s;
+        }
+
+        .service-card:hover .service-icon {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* --- 7. ASSESSMENT FLOW --- */
+
+        /* Steps Indicators */
+        .steps-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .steps-progress-bar {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 3px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #777;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 1;
+            margin: 0 40px;
+            transition: .3s;
+            border: 3px solid #f0f2f5;
+        }
+
+        .step-circle.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2);
+        }
+
+        /* Search & Checkboxes */
+        .search-wrapper {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto 40px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border-radius: 50px;
+            border: 2px solid #e0e0e0;
+            outline: none;
+            font-size: 1rem;
+            transition: .3s;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px;
+        }
+
+        .option-card {
+            background: var(--white);
+            border: 2px solid transparent;
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 140px;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary);
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        .option-card input {
+            display: none;
+        }
+
+        .option-icon {
+            font-size: 2rem;
+            color: var(--gray);
+            margin-bottom: 10px;
+        }
+
+        .option-card.selected .option-icon {
+            color: var(--primary);
+        }
+
+        /* --- 8. RESULTS SECTION --- */
+        .risk-banner {
+            padding: 20px;
+            border-radius: var(--radius-md);
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .risk-low {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .risk-high {
+            background: linear-gradient(135deg, #ff6b6b, #c0392b);
+        }
+
+        .result-card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .remedy-card {
+            background: white;
+            padding: 25px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            border-left: 5px solid var(--secondary);
+        }
+
+        .remedy-card h4 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* --- 9. DOCTOR DIRECTORY --- */
+        .doc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .doc-card {
+            background: white;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .doc-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-5px);
+        }
+
+        .doc-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 15px;
+            border: 3px solid var(--light);
+        }
+
+        /* --- 10. MODALS --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-box {
+            background: white;
+            padding: 35px;
+            border-radius: var(--radius-lg);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popUp {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* CRITICAL ALERT STYLES */
+        .modal-critical {
+            border-top: 5px solid var(--danger);
+            background: #fff5f5;
+        }
+
+        .modal-critical .modal-icon {
+            color: var(--danger);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Responsive Utilities */
+        @media (max-width: 768px) {
+            .navbar-brand span {
+                display: none;
+            }
+
+            .hero-title {
+                font-size: 2.2rem;
+            }
+
+            .steps-progress-bar {
+                width: 100px;
+            }
+
+            .step-circle {
+                margin: 0 10px;
+            }
+        }
+
+        /* --- PRESCRIPTION SHEET CSS --- */
+        .prescription-sheet {
+            background: white;
+            border: 2px solid #333;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+            font-family: 'Times New Roman', Times, serif;
+            /* Classic Medical Font */
+            position: relative;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .rx-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 3px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .rx-logo {
+            font-size: 2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rx-info {
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        .rx-section {
+            margin-bottom: 25px;
+        }
+
+        .rx-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rx-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.05rem;
+        }
+
+        .rx-footer {
+            margin-top: 50px;
+            border-top: 2px solid #333;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-style: italic;
+            font-size: 0.8rem;
+        }
+
+        /* Print Override */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            .prescription-sheet,
+            .prescription-sheet * {
+                visibility: visible;
+            }
+
+            .prescription-sheet {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+                border: none;
+                box-shadow: none;
+            }
+
+            .btn {
+                display: none !important;
+            }
+        }
+
+        /* --- PRINT STYLES --- */
+        @media print {
+
+            .navbar,
+            .nav-controls,
+            .btn-outline,
+            /* Hide non-essential buttons */
+            .search-wrapper,
+            .steps-container,
+            .hero-section button,
+            /* Hide hero buttons */
+            .service-grid,
+            /* Hide service grid if printing home */
+            .modal-overlay {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+                color: black;
+            }
+
+            .view-section {
+                display: block !important;
+                padding: 0 !important;
+                min-height: auto !important;
+                animation: none !important;
+            }
+
+            /* If we are on Results, hide other sections */
+            /* Since JS handles display, we rely on current view functionality. 
+               However, let's ensure the relevant containers are clean. */
+
+            .card,
+            .remedy-card,
+            .doc-card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                break-inside: avoid;
+            }
+
+            /* Specific fix for the Print button itself to be hidden */
+            .btn {
+                display: none !important;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- MAP VIEW --- */
+        #map-container {
+            height: 450px;
+            width: 100%;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+            box-shadow: var(--shadow-md);
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+            padding: 14px 18px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+        }
+
+        .map-status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .map-status-bar.loading {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffc107;
+        }
+
+        .map-status-bar.success {
+            background: #d1f5e0;
+            color: #0a6a35;
+            border: 1px solid #28a745;
+        }
+
+        .map-status-bar.error {
+            background: #ffe5e5;
+            color: #b30000;
+            border: 1px solid var(--danger);
+        }
+
+        .facility-list {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+
+        .facility-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            border: 1px solid #e5e5e5;
+            border-left: 4px solid var(--primary);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .facility-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .facility-card.hospital {
+            border-left-color: #dc3545;
+        }
+
+        .facility-card.clinic {
+            border-left-color: #007bff;
+        }
+
+        .facility-card.pharmacy {
+            border-left-color: #28a745;
+        }
+
+        .facility-card.other {
+            border-left-color: #fd7e14;
+        }
+
+        .facility-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 4px;
+            color: var(--dark);
+        }
+
+        .facility-card p {
+            font-size: 0.82rem;
+            color: var(--gray);
+            margin: 0;
+        }
+
+        @media (max-width: 600px) {
+            #map-container {
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-heartbeat fa-lg"></i>
+            <span>MediCure </span>
+        </div>
+        <ul class="nav-links">
+            <li class="nav-item active" onclick="navigate('home')">Home</li>
+            <li class="nav-item" onclick="navigate('assessment')">Checkup</li>
+            <li class="nav-item" onclick="navigate('directory')">Doctors</li>
+            <li class="nav-item" onclick="navigate('nearby')" style="color: #28a745;"><i
+                    class="fas fa-map-marker-alt"></i> Nearby</li>
+            <li class="nav-item" style="color: var(--danger);" onclick="navigate('emergency')">Emergency</li>
+        </ul>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <main class="container">
+
+        <!-- NAV BACK BUTTON (Dynamically Visible) -->
+        <div class="nav-controls" id="nav-controls" style="display:none;">
+            <div class="back-btn" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i> Back
+            </div>
+        </div>
+
+        <!-- === VIEW: HOME === -->
+        <section id="view-home" class="view-section active">
+            <div class="hero-section">
+                <h1 class="hero-title">Your Personal<br><span style="color: var(--primary);">AI Health Assistant</span>
+                </h1>
+                <p class="hero-text">Instant symptom analysis, home remedies, and specialist connections.</p>
+                <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="navigate('assessment')">
+                        <i class="fas fa-stethoscope"></i> Start Health Checkup
+                    </button>
+                    <button class="btn btn-outline" onclick="navigate('directory')">
+                        <i class="fas fa-user-md"></i> Find a Doctor
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-title" style="font-size: 1.8rem;">Our Services</div>
+            <div class="service-grid">
+                <div class="service-card" onclick="navigate('assessment')">
+                    <div class="service-icon"><i class="fas fa-notes-medical"></i></div>
+                    <h3>Symptom Checker</h3>
+                    <p style="color: var(--gray); font-size: 0.9rem;">Analyze symptoms instantly with AI precision to
+                        get remedies.</p>
+                </div>
+                <div class="service-card" onclick="navigate('directory')">
+                    <div class="service-icon"><i class="fas fa-hospital-user"></i></div>
+                    <h3>Specialist Directory</h3>
+                    <p style="color: var(--gray); font-size: 0.9rem;">Browse and book top-rated doctors in your city.
+                    </p>
+                </div>
+                <div class="service-card" onclick="navigate('emergency')">
+                    <div class="service-icon" style="color: var(--danger); background: rgba(255, 107, 107, 0.1);"><i
+                            class="fas fa-ambulance"></i></div>
+                    <h3>Emergency Aid</h3>
+                    <p style="color: var(--gray); font-size: 0.9rem;">Quick access to ambulance and first-aid
+                        guidelines.</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- === VIEW: ASSESSMENT (STEPS) === -->
+        <section id="view-assessment" class="view-section">
+
+            <!-- PROGRESS BAR -->
+            <div class="steps-container">
+                <div class="steps-progress-bar"></div>
+                <div class="step-circle" id="step-node-1">1</div>
+                <div class="step-circle" id="step-node-2">2</div>
+                <div class="step-circle" id="step-node-3">3</div>
+            </div>
+
+            <!-- STEP 0: PATIENT DETAILS -->
+            <div id="step-0" class="step-content">
+                <h2 class="section-title">Patient Details</h2>
+                <p class="section-subtitle">Help us provide safe, personalized recommendations.</p>
+
+                <div class="card" style="max-width: 500px; margin: 0 auto;">
+                    <form id="patient-form" onsubmit="event.preventDefault(); nextStep(1);">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Patient Name</label>
+                            <input type="text" id="p_name" required class="search-input"
+                                style="border-radius:12px; padding:12px;" placeholder="Full Name">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Age</label>
+                            <input type="number" id="p_age" required min="0" max="120" class="search-input"
+                                style="border-radius:12px; padding:12px;" placeholder="Years (e.g. 25)">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Mobile Number</label>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span
+                                    style="font-weight: bold; background: #eee; padding: 12px; border-radius: 12px; border: 1px solid #ddd;">+91</span>
+                                <input type="tel" id="p_mobile" required pattern="[0-9]{10}" class="search-input"
+                                    style="border-radius:12px; padding:12px;" placeholder="10-digit Number"
+                                    maxlength="10">
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600;">Biological Sex</label>
+                            <div style="display:flex; gap:20px;">
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                    <input type="radio" name="p_sex" value="male" onchange="togglePregnancy(false)"
+                                        checked> Male
+                                </label>
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                    <input type="radio" name="p_sex" value="female" onchange="togglePregnancy(true)">
+                                    Female
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="pregnancy-wrapper"
+                            style="margin-bottom: 20px; display:none; background: #fff0f3; padding: 15px; border-radius: 8px;">
+                            <label style="display:block; margin-bottom:8px; font-weight:600; color: #d63384;">Are you
+                                currently pregnant?</label>
+                            <div style="display:flex; gap:20px;">
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                    <input type="radio" name="p_preg" value="no" checked> No
+                                </label>
+                                <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
+                                    <input type="radio" name="p_preg" value="yes"> Yes
+                                </label>
+                            </div>
+                            <p style="font-size:0.8rem; color:#d63384; margin-top:5px;">*Crucial for medication safety.
+                            </p>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width:100%;">Continue <i
+                                class="fas fa-arrow-right"></i></button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- STEP 1: SYMPTOMS (Hidden initially) -->
+            <div id="step-1" class="step-content hidden">
+                <!-- ... (Same as before) ... -->
+                <!-- (We render this part dynamically in JS if needed to keep it clean, but for now we just toggle visibility) -->
+                <h2 class="section-title">What's bothering you?</h2>
+                <p class="section-subtitle">Select all the symptoms you are currently experiencing.</p>
+
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="symptom-search" class="search-input"
+                        placeholder="Search symptoms (e.g. Fever, Headache)..." onkeyup="filterSymptoms()">
+                </div>
+
+                <div class="options-grid" id="symptoms-grid">
+                    <!-- JS Injected -->
+                </div>
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="btn btn-primary" onclick="nextStep(2)">
+                        Next Step <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: HISTORY -->
+            <div id="step-2" class="step-content hidden">
+                <h2 class="section-title" style="color: var(--danger);">Critical History Check</h2>
+                <p class="section-subtitle">Do you have any existing chronic conditions? This is vital for safety.</p>
+
+                <div class="options-grid" id="history-grid">
+                    <!-- JS Injected -->
+                </div>
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="btn btn-primary" onclick="finalizeResult()">
+                        Analyze & Get Results <i class="fas fa-check-circle"></i>
+                    </button>
+                    <p style="margin-top: 10px; font-size: 0.9rem; color: #777; cursor:pointer; text-decoration: underline;"
+                        onclick="finalizeResult(true)">Skip (I have no conditions)</p>
+                </div>
+            </div>
+
+            <!-- STEP 3: RESULTS -->
+            <div id="step-3" class="step-content hidden">
+                <h2 class="section-title">Health Assessment</h2>
+
+                <div id="result-banner"></div>
+
+                <div class="result-card-container" id="results-container">
+                    <!-- Results Injected -->
+                </div>
+
+                <div style="text-align: center; margin-top: 50px; display: flex; justify-content: center; gap: 20px;">
+                    <button class="btn btn-outline" onclick="navigate('home')">Back to Home</button>
+                    <button class="btn btn-primary" onclick="printReport()"><i class="fas fa-print"></i> Print
+                        Report</button>
+                </div>
+            </div>
+
+        </section>
+
+
+
+        <!-- === VIEW: DOCTORS DIRECTORY === -->
+        <section id="view-directory" class="view-section">
+            <h2 class="section-title">Specialist Directory</h2>
+            <p class="section-subtitle">Connect with top-rated medical professionals in your area.</p>
+
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" placeholder="Search by name or specialty..."
+                    onkeyup="console.log('Search pending implementation')">
+            </div>
+
+            <div class="doc-grid" id="doc-grid-container">
+                <!-- JS Injected -->
+            </div>
+        </section>
+
+        <!-- === VIEW: EMERGENCY === -->
+        <section id="view-emergency" class="view-section">
+            <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+                <i class="fas fa-ambulance"
+                    style="font-size: 5rem; color: var(--danger); background: #ffe5e5; padding: 30px; border-radius: 50%; margin-bottom: 20px;"></i>
+                <h2 class="section-title" style="color: var(--danger);">Emergency Assistance</h2>
+                <p class="section-subtitle">For critical situations requiring immediate attention.</p>
+
+                <div class="card"
+                    style="background: #fff5f5; border: 2px solid var(--danger); margin-bottom: 30px; text-align: left;">
+                    <h3 style="color: var(--danger); margin-bottom: 15px;"><i class="fas fa-phone-alt"></i> Emergency
+                        Contacts</h3>
+                    <ul style="font-size: 1.1rem; line-height: 2;">
+                        <li><strong>Ambulance:</strong> <a href="tel:102"
+                                style="color: var(--primary); text-decoration: underline;">102</a></li>
+                        <li><strong>Police:</strong> <a href="tel:100"
+                                style="color: var(--primary); text-decoration: underline;">100</a></li>
+                        <li><strong>General Helpline:</strong> <a href="tel:112"
+                                style="color: var(--primary); text-decoration: underline;">112</a></li>
+                    </ul>
+                </div>
+
+                <div class="card" style="text-align: left;">
+                    <h3 style="color: var(--dark); margin-bottom: 15px;"><i class="fas fa-first-aid"></i> Quick First
+                        Aid</h3>
+                    <div style="margin-bottom: 15px;">
+                        <strong>Bleeding:</strong> Apply firm pressure with clean cloth. Elevate injury.
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <strong>Burns:</strong> Run under cool water for 20 mins. Do NOT apply ice/butter.
+                    </div>
+                    <div>
+                        <strong>Choking:</strong> Perform Heimlich maneuver if unable to breathe.
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 15px;">
+                    <button class="btn btn-danger" onclick="location.href='tel:102'"
+                        style="width: 100%; font-size: 1.2rem; padding: 15px;">
+                        <i class="fas fa-phone"></i> CALL AMBULANCE NOW
+                    </button>
+                    <button class="btn btn-primary" onclick="navigate('nearby')"
+                        style="width: 100%; font-size: 1rem; padding: 14px;">
+                        <i class="fas fa-map-marker-alt"></i> Find Nearest Hospital on Map
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- === VIEW: NEARBY HOSPITALS MAP === -->
+        <section id="view-nearby" class="view-section">
+            <h2 class="section-title"><i class="fas fa-map-marked-alt" style="color:var(--primary);"></i> Nearby Medical
+                Facilities</h2>
+            <p class="section-subtitle">Locating hospitals, clinics, pharmacies &amp; first-aid centers near you.</p>
+
+            <div id="map-status-bar" class="map-status-bar loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span id="map-status-text">Tap the button below to find facilities near your current location.</span>
+            </div>
+
+            <div style="text-align:center; margin-bottom: 18px;">
+                <button class="btn btn-primary" onclick="initNearbyMap()" id="locate-btn"
+                    style="font-size:1rem; padding: 13px 30px;">
+                    <i class="fas fa-location-arrow"></i> Detect My Location &amp; Search
+                </button>
+            </div>
+
+            <div id="map-container"></div>
+
+            <!-- Legend -->
+            <div class="map-legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#dc3545;"></div> Hospital
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#007bff;"></div> Clinic / Doctor
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#28a745;"></div> Pharmacy
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#fd7e14;"></div> First Aid / Other
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background:#6f42c1;"></div> Your Location
+                </div>
+            </div>
+
+            <!-- Facility Cards List -->
+            <div class="facility-list" id="facility-list"></div>
+        </section>
+
+        <!-- === VIEW: ADMIN LOGIN === -->
+        <section id="view-admin-login" class="view-section">
+            <div style="max-width: 400px; margin: 50px auto; text-align: center;">
+                <h2 class="section-title">Admin Login</h2>
+                <p class="section-subtitle">Authorized Personnel Only</p>
+                <div class="card">
+                    <form onsubmit="event.preventDefault(); checkAdminLogin();">
+                        <input type="text" id="admin-user" class="search-input" placeholder="Username"
+                            style="margin-bottom: 15px; border-radius: 8px;">
+                        <input type="password" id="admin-pass" class="search-input" placeholder="Password"
+                            style="margin-bottom: 20px; border-radius: 8px;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                    </form>
+                    <p id="login-error" style="color: red; margin-top: 10px; display: none;">Invalid Credentials</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- === VIEW: ADMIN DASHBOARD === -->
+        <section id="view-admin-dashboard" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                <h2 class="section-title">Admin Dashboard</h2>
+                <button class="btn btn-danger" onclick="adminLogout()"
+                    style="padding: 8px 20px; font-size: 0.9rem;">Logout</button>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="service-grid"
+                style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 40px;">
+                <div class="card" style="text-align: center;">
+                    <h3 style="color: var(--primary); font-size: 2.5rem;" id="total-patients">0</h3>
+                    <p style="color: var(--gray);">Total Checkups</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <h3 style="color: var(--success); font-size: 2.5rem;" id="total-bookings">0</h3>
+                    <p style="color: var(--gray);">Doctor Bookings</p>
+                </div>
+            </div>
+
+            <!-- Doctor Booking Stats -->
+            <h3 style="margin-bottom: 20px;">Doctor Appointments</h3>
+            <div class="card" style="margin-bottom: 40px; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Doctor Name</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Specialty</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Appointments
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-doc-list">
+                        <!-- JS Injected -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Recent Patients -->
+            <h3 style="margin-bottom: 20px;">Recent Patient Comparisons</h3>
+            <div class="card" style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Date</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Patient</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Symptoms</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-patient-list">
+                        <!-- JS Injected -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer for Admin Link -->
+        <footer style="text-align: center; padding: 20px; margin-top: 50px; color: var(--gray); font-size: 0.8rem;">
+            <p>&copy; 2026 MediCure. All rights reserved.</p>
+            <p style="margin-top: 10px;"><a href="#" onclick="navigate('admin-login')" style="color: #ccc;">Admin
+                    Login</a></p>
+        </footer>
+
+        <!-- === MODALS === -->
+        <!-- Critical Disease Alert Modal -->
+        <div class="modal-overlay" id="critical-modal" style="display:none;">
+            <div class="modal-box modal-critical">
+                <i class="fas fa-exclamation-triangle modal-icon" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                <h3 style="color: var(--danger); margin-bottom: 10px;">CRITICAL ALERT!</h3>
+                <p style="font-size: 1.1rem; font-weight: bold; margin-bottom: 10px;">Possible Condition: <span
+                        id="crit-disease" style="color: var(--dark);"></span></p>
+
+                <div
+                    style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ffcccc; margin-bottom: 20px; text-align: left;">
+                    <p style="font-size: 0.9rem; color: #555; margin-bottom: 5px;"><strong>Recommended Action (Age:
+                            <span id="crit-age"></span>):</strong></p>
+                    <p id="crit-med" style="color: var(--danger); font-weight: bold; font-size: 1.1rem;"></p>
+                    <p style="font-size: 0.8rem; color: #777; margin-top: 5px;">*Immediate medical attention
+                        recommended.</p>
+                </div>
+
+                <button class="btn btn-danger" onclick="closeCriticalModal()" style="width: 100%;">
+                    I Understand
+                </button>
+            </div>
+        </div>
+
+        <!-- Booking Modal -->
+        <div class="modal-overlay" id="booking-modal" style="display:none;">
+            <div class="modal-box">
+                <i class="fas fa-calendar-check"
+                    style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+                <h3>Book Appointment</h3>
+                <p style="color: var(--gray); margin-bottom: 20px;">with <span id="modal-doc-name"
+                        style="font-weight: bold; color: var(--dark);">Doctor</span></p>
+
+                <form onsubmit="confirmBooking(event)">
+                    <input type="text" class="search-input"
+                        style="border-radius: 8px; padding: 10px; margin-bottom: 10px;" placeholder="Your Name"
+                        required>
+                    <input type="tel" class="search-input"
+                        style="border-radius: 8px; padding: 10px; margin-bottom: 10px;" placeholder="Phone Number"
+                        required>
+                    <input type="date" class="search-input"
+                        style="border-radius: 8px; padding: 10px; margin-bottom: 20px;" required>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-outline" style="flex: 1;"
+                            onclick="closeModal('booking-modal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+        <script>
+            // --- DATA: 40+ SYMPTOMS DATABASE ---
+            const symptomsDB = [
+                // COMMON
+                { id: "fever", name: "Fever", icon: "fa-temperature-high", meds: "Paracetamol 650mg", diet: "Hydration, Soup, Coconut Water", advice: "Tepid sponge bath, complete rest." },
+                { id: "cold", name: "Common Cold", icon: "fa-snowflake", meds: "Cetirizine 10mg, Steam Inhalation", diet: "Ginger Tea, Warm Soup", advice: "Steam inhalation twice daily, avoid cold water." },
+                { id: "flu", name: "Flu (Influenza)", icon: "fa-head-side-virus", meds: "Oseltamivir 75mg (Prescription)", diet: "Kiwi, Leafy Greens", advice: "Isolate to prevent spread, rest." },
+                { id: "headache", name: "Headache", icon: "fa-brain", meds: "Ibuprofen 400mg / Aspirin 300mg", diet: "Coffee, Water, Magnesium rich foods", advice: "Rest in a dark quiet room, massage temples." },
+                { id: "migraine", name: "Migraine", icon: "fa-bolt", meds: "Sumatriptan 50mg / Naproxen 500mg", diet: "Avoid caffeine/cheese trigger foods", advice: "Sleep in total darkness, cold compress.", critical: true, disease: "Migraine Episode" },
+
+                // RESPIRATORY
+                { id: "chest_pain", name: "Chest Pain / Heartburn", icon: "fa-heartbeat", meds: "Aspirin 300mg (Chewable)", diet: "Avoid heavy meals", advice: "Call Ambulance immediately if pain spreads to arm.", critical: true, disease: "Myocardial Infarction / Angina" },
+                { id: "cough_dry", name: "Dry Cough", icon: "fa-lungs", meds: "Dextromethorphan Syrup", diet: "Honey with warm water", advice: "Salt water gargle 3 times a day." },
+                { id: "cough_wet", name: "Wet Cough", icon: "fa-viruses", meds: "Expectorant Syrup", diet: "Avoid milk/dairy", advice: "Steam inhalation to loosen mucus." },
+                { id: "sore_throat", name: "Sore Throat", icon: "fa-biohazard", meds: "Analgesic Lozenges", diet: "Warm broth, Soft foods", advice: "Salt water gargle, voice rest." },
+                { id: "asthma_mild", name: "Mild Asthma", icon: "fa-lungs-virus", meds: "Salbutamol Inhaler (100mcg)", diet: "Magnesium rich foods", advice: "Sit upright, deep controlled breathing.", critical: true, disease: "Asthma Attack" },
+                { id: "sinus", name: "Sinusitis", icon: "fa-head-side-mask", meds: "Pseudoephedrine 60mg", diet: "Spicy food (clears sinus)", advice: "Hot towel compress on face." },
+
+                // DIGESTIVE
+                { id: "stomach", name: "Stomach Pain", icon: "fa-stomach", meds: "Dicyclomine 10mg", diet: "BRAT Diet (Banana, Rice, Toast)", advice: "Hot water bag compress on belly." },
+                { id: "acidity", name: "Acidity / GERD", icon: "fa-fire", meds: "Pantoprazole 40mg", diet: "Cold Milk, Avoid Spice", advice: "Walk after meals, sleep on left side." },
+                { id: "diarrhea", name: "Diarrhea", icon: "fa-poop", meds: "Loperamide 2mg, ORS Zinc", diet: "Curd Rice, Bananas", advice: "Hydrate aggresively with ORS." },
+                { id: "constipation", name: "Constipation", icon: "fa-toilet", meds: "Psyllium Husk / Bisacodyl 5mg", diet: "Papaya, High Fiber, Water", advice: "Walk for 20 mins, squat position." },
+                { id: "nausea", name: "Nausea/Vomiting", icon: "fa-dizzy", meds: "Ondansetron 4mg", diet: "Ginger Ale, Crackers", advice: "Sip water slowly, avoid strong smells." },
+                { id: "bloating", name: "Bloating/Gas", icon: "fa-wind", meds: "Simethicone 80mg", diet: "Peppermint Tea", advice: "Walk after eating, avoid carbonated drinks." },
+
+                // PAIN & ORTHO
+                { id: "backpain", name: "Back Pain", icon: "fa-user-injured", meds: "Volini Gel / Ibuprofen 400mg", diet: "Calcium & Vit D foods", advice: "Use hard mattress, correct posture, heat pack." },
+                { id: "neck", name: "Neck Pain", icon: "fa-user-md", meds: "Chlorzoxazone 250mg", diet: "Anti-inflammatory foods", advice: "Neck stretches, avoid looking down at phone." },
+                { id: "knee", name: "Knee Pain", icon: "fa-bone", meds: "Diclofenac Gel / Etoricoxib 90mg", diet: "Fish Oil, Walnuts", advice: "Knee brace support, rest." },
+                { id: "muscle", name: "Muscle Spasm", icon: "fa-running", meds: "Magnesium 250mg", diet: "Bananas, Electrolytes", advice: "Gentle stretching, massage." },
+                { id: "joint", name: "Joint Pain", icon: "fa-hand-rock", meds: "Omega-3 1000mg", diet: "Turmeric Milk, Fish", advice: "Low impact exercise (swimming)." },
+
+                // DENTAL & ENT
+                { id: "tooth", name: "Toothache", icon: "fa-tooth", meds: "Ketorolac 10mg / Clove Oil", diet: "Soft cold foods (Ice cream)", advice: "Cold compress on cheek, visit dentist." },
+                { id: "ear", name: "Ear Ache", icon: "fa-deaf", meds: "Otogesic Ear Drops", diet: "Soft chewing foods", advice: "Warm compress behind ear, keep dry." },
+                { id: "ulcers", name: "Mouth Ulcers", icon: "fa-meh-rolling-eyes", meds: "Oralsore Gel / B-Complex", diet: "B-Complex, Avoid Spice", advice: "Ice cube application, salt rinse." },
+
+                // SKIN
+                { id: "acne", name: "Acne/Pimples", icon: "fa-dot-circle", meds: "Benzoyl Peroxide 2.5%", diet: "Low sugar, lots of water", advice: "Do not pop, wash face twice daily." },
+                { id: "rash", name: "Skin Rash", icon: "fa-allergies", meds: "Calamine Lotion / Levocetirizine 5mg", diet: "Cooling foods", advice: "Cold compress, avoid scratching." },
+                { id: "burn_minor", name: "Minor Burn", icon: "fa-fire-alt", meds: "Silver Sulfadiazine Cream", diet: "Protein for healing", advice: "Run cool water for 20 mins immediately." },
+                { id: "cut", name: "Cut/Wound", icon: "fa-band-aid", meds: "Povidone Iodine Ointment", diet: "High Protein", advice: "Clean with water, apply pressure." },
+                { id: "bite", name: "Insect Bite", icon: "fa-bug", meds: "Hydrocortisone Cream", diet: "Avoid allergens", advice: "Remove stinger if any, ice pack." },
+
+                // OTHERS
+                { id: "insomnia", name: "Insomnia", icon: "fa-bed", meds: "Melatonin 3mg", diet: "Warm Milk, Chamomile Tea", advice: "No screens 1hr before bed, dark room." },
+                { id: "anxiety", name: "Anxiety", icon: "fa-user-friends", meds: "Ashwagandha 250mg", diet: "Dark Chocolate, Green Tea", advice: "4-7-8 Breathing technique, meditation." },
+                { id: "fatigue", name: "Fatigue/Weakness", icon: "fa-battery-quarter", meds: "Multivitamins / Iron 100mg", diet: "Iron rich foods, nuts", advice: "8 hours sleep, hydration check." },
+                { id: "dizziness", name: "Dizziness", icon: "fa-sync-alt", meds: "Betahistine 8mg", diet: "Salted Lemon Water", advice: "Sit down immediately, focus on one point.", critical: true, disease: "Vertigo / Hypotension" },
+                { id: "sunburn", name: "Sunburn", icon: "fa-sun", meds: "Aloe Vera Gel", diet: "Cucumber, Watermelon", advice: "Avoid sun, cool shower." },
+                { id: "hiccups", name: "Hiccups", icon: "fa-comment-dots", meds: "Granulated Sugar", diet: "Ice water", advice: "Hold breath for 10 seconds." },
+                { id: "eye_strain", name: "Eye Strain", icon: "fa-glasses", meds: "Carboxymethylcellulose Drops", diet: "Carrots, Vit A", advice: "20-20-20 Rule (Look 20ft away every 20mins)." },
+                { id: "allergy", name: "Seasonal Allergy", icon: "fa-seedling", meds: "Levocetirizine 5mg", diet: "Local Honey", advice: "Shower after outdoors, windows closed." },
+
+                // NEUROLOGICAL
+                { id: "seizure", name: "Seizure / Convulsion", icon: "fa-bolt", meds: "SEIZURE_PROTOCOL", diet: "Ketogenic Diet (medical supervision), Magnesium-rich foods, avoid alcohol & caffeine", advice: "Do NOT restrain the person. Turn them on their side (recovery position), clear the area of sharp objects, time the seizure. Call 102 immediately if seizure lasts >5 minutes or if it is the first ever seizure.", critical: true, disease: "Epileptic Seizure / Convulsive Episode" }
+            ];
+
+            const historyDB = [
+                { id: "diabetes", name: "Diabetes", icon: "fa-cube", risk: "HIGH", specialist: "Endocrinologist" },
+                { id: "bp", name: "Hypertension (BP)", icon: "fa-heartbeat", risk: "MEDIUM", specialist: "Cardiologist" },
+                { id: "heart", name: "Heart Disease", icon: "fa-heart-broken", risk: "HIGH", specialist: "Cardiologist" },
+                { id: "asthma", name: "Asthma", icon: "fa-lungs-virus", risk: "MEDIUM", specialist: "Pulmonologist" },
+                { id: "breath_copd", name: "COPD / Emphysema", icon: "fa-lungs", risk: "HIGH", specialist: "Pulmonologist" },
+                { id: "preg", name: "Pregnancy", icon: "fa-baby", risk: "HIGH", specialist: "Gynecologist" },
+                { id: "kidney", name: "Kidney Issues", icon: "fa-procedures", risk: "HIGH", specialist: "Nephrologist" },
+                { id: "cancer", name: "Cancer History", icon: "fa-ribbon", risk: "HIGH", specialist: "Oncologist" },
+                { id: "liver", name: "Liver / Cirrhosis", icon: "fa-flask", risk: "HIGH", specialist: "Hepatologist" },
+                { id: "stroke", name: "Stroke History", icon: "fa-wheelchair", risk: "HIGH", specialist: "Neurologist" },
+                { id: "epilepsy", name: "Epilepsy / Seizures", icon: "fa-bolt", risk: "HIGH", specialist: "Neurologist" },
+                { id: "thyroid", name: "Thyroid Disorder", icon: "fa-dna", risk: "MEDIUM", specialist: "Endocrinologist" },
+                { id: "arthritis", name: "Arthritis / Rheumatism", icon: "fa-bone", risk: "MEDIUM", specialist: "Rheumatologist" },
+                { id: "tb", name: "Tuberculosis (TB)", icon: "fa-viruses", risk: "HIGH", specialist: "Pulmonologist" },
+                { id: "pcos", name: "PCOS / PCOD", icon: "fa-venus", risk: "MEDIUM", specialist: "Gynecologist" },
+                { id: "anemia", name: "Severe Anemia", icon: "fa-tint", risk: "MEDIUM", specialist: "Hematologist" },
+                { id: "glaucoma", name: "Glaucoma", icon: "fa-eye", risk: "MEDIUM", specialist: "Ophthalmologist" },
+                { id: "ibd", name: "Crohn's / Colitis", icon: "fa-biohazard", risk: "HIGH", specialist: "Gastroenterologist" },
+                { id: "lupus", name: "Lupus / Autoimmune", icon: "fa-shield-virus", risk: "HIGH", specialist: "Rheumatologist" },
+                { id: "hiv", name: "HIV / AIDS", icon: "fa-virus", risk: "HIGH", specialist: "Immunologist" },
+                { id: "mental", name: "Depression / Bipolar", icon: "fa-head-side-virus", risk: "MEDIUM", specialist: "Psychiatrist" }
+            ];
+
+            const doctorsDB = [
+                { name: "Dr. Sarah Smith", type: "General Physician", exp: "12 Yrs", img: "https://randomuser.me/api/portraits/women/44.jpg" },
+                { name: "Dr. James Wilson", type: "Cardiologist", exp: "18 Yrs", img: "https://randomuser.me/api/portraits/men/32.jpg" },
+                { name: "Dr. Raj Patel", type: "Neurologist", exp: "15 Yrs", img: "https://randomuser.me/api/portraits/men/64.jpg" },
+                { name: "Dr. Emily Watson", type: "Dermatologist", exp: "9 Yrs", img: "https://randomuser.me/api/portraits/women/68.jpg" },
+                { name: "Dr. Linda Green", type: "Gynecologist", exp: "20 Yrs", img: "https://randomuser.me/api/portraits/women/22.jpg" },
+                { name: "Dr. Alan Grant", type: "Pediatrician", exp: "14 Yrs", img: "https://randomuser.me/api/portraits/men/11.jpg" }
+            ];
+
+            // --- STATE & INIT ---
+            let currentView = 'home';
+            let assessmentStep = 0; // Changed from 1 to 0
+            let selections = { symptoms: [], history: [] };
+            let patientProfile = {
+                name: "",
+                age: 0,
+                sex: "male",
+                mobile: "",
+                pregnant: false
+            };
+
+            window.onload = function () {
+                renderSymptoms();
+                renderHistory();
+                renderDoctors();
+                updateNavState();
+            };
+
+            // --- INTERACTION: FORM HANDLERS ---
+            function togglePregnancy(show) {
+                document.getElementById('pregnancy-wrapper').style.display = show ? 'block' : 'none';
+            }
+
+            // --- CORE NAVIGATION ---
+            function navigate(viewId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                document.getElementById(`view-${viewId}`).classList.add('active');
+
+                if (viewId === 'assessment') {
+                    resetAssessment();
+                }
+
+                currentView = viewId;
+                updateNavState();
+                window.scrollTo(0, 0);
+            }
+
+            function nextStep(targetStep) {
+                // LOGIC INTERCEPTION
+                if (targetStep === 1) {
+                    // Validate Step 0 (Patient Details)
+                    const name = document.getElementById('p_name').value;
+                    const age = document.getElementById('p_age').value;
+                    const mobile = document.getElementById('p_mobile').value;
+
+                    if (!name || !age || !mobile) {
+                        alert("Please fill in Name, Age, and Mobile Number.");
+                        return;
+                    }
+                    if (mobile.length !== 10) {
+                        alert("Please enter a valid 10-digit Mobile Number.");
+                        return;
+                    }
+
+                    // Save Profile
+                    patientProfile.name = name;
+                    patientProfile.age = parseInt(age);
+                    patientProfile.mobile = mobile;
+                    patientProfile.sex = document.querySelector('input[name="p_sex"]:checked').value;
+                    patientProfile.pregnant = (patientProfile.sex === 'female' && document.querySelector('input[name="p_preg"]:checked').value === 'yes');
+                }
+
+                if (targetStep === 2) {
+                    if (selections.symptoms.length === 0) {
+                        alert("Please select at least one symptom.");
+                        return;
+                    }
+                    showConditionModal(); // Safety Check
+                } else {
+                    proceedAssessment(targetStep);
+                }
+            }
+
+            function proceedAssessment(step) {
+                assessmentStep = step;
+                updateAssessmentUI();
+                updateNavState();
+            }
+
+            function updateAssessmentUI() {
+                // Steps visibility
+                document.getElementById('step-0').classList.add('hidden');
+                document.getElementById('step-1').classList.add('hidden');
+                document.getElementById('step-2').classList.add('hidden');
+                document.getElementById('step-3').classList.add('hidden');
+                document.getElementById(`step-${assessmentStep}`).classList.remove('hidden');
+
+                // Progress bar (Logic updated for Step 0)
+                // If Step 0, no circles active. 
+                document.getElementById('step-node-1').className = `step-circle ${assessmentStep >= 1 ? 'active' : ''}`;
+                document.getElementById('step-node-2').className = `step-circle ${assessmentStep >= 2 ? 'active' : ''}`;
+                document.getElementById('step-node-3').className = `step-circle ${assessmentStep >= 3 ? 'active' : ''}`;
+            }
+
+            function resetAssessment() {
+                assessmentStep = 0; // Start at details
+                selections.symptoms = [];
+                selections.history = [];
+                document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+                updateAssessmentUI();
+            }
+
+            // --- RENDERERS ---
+            function renderSymptoms() {
+                const grid = document.getElementById('symptoms-grid');
+                grid.innerHTML = symptomsDB.map(s => `
+                    <div class="option-card" onclick="toggleSelection('symptoms', '${s.id}', this)">
+                        <i class="fas ${s.icon} option-icon"></i>
+                        <h4>${s.name}</h4>
+                        <input type="checkbox" value="${s.id}">
+                    </div>
+                `).join('');
+            }
+
+            function renderHistory() {
+                const grid = document.getElementById('history-grid');
+                grid.innerHTML = historyDB.map(h => `
+                    <div class="option-card" onclick="toggleSelection('history', '${h.id}', this)" style="border-left: 4px solid ${h.risk === 'HIGH' ? 'var(--danger)' : 'var(--warning)'}">
+                        <i class="fas ${h.icon} option-icon"></i>
+                        <h4>${h.name}</h4>
+                        <input type="checkbox" value="${h.id}">
+                    </div>
+                `).join('');
+            }
+
+            function renderDoctors() {
+                const container = document.querySelector('.doc-grid'); // Fixed selector if needed, or check HTML
+                // Actually the doc-grid is in the directory view which we haven't touched much.
+                // But let's verify if the element exists in original HTML. 
+                // In my read, I didn't see directory view HTML but assumed it's there.
+                // To be safe against errors, we check if element exists.
+                const docGrid = document.getElementById('doc-grid-container');
+                if (!docGrid) return;
+
+                docGrid.innerHTML = doctorsDB.map(d => `
+                    <div class="doc-card">
+                        <img src="${d.img}" class="doc-img" alt="${d.name}">
+                        <h3>${d.name}</h3>
+                        <p style="color:var(--primary); font-weight:600;">${d.type}</p>
+                        <p><i class="fas fa-briefcase"></i> ${d.exp} Experience</p>
+                        <button class="btn btn-outline" style="margin-top:15px; width:100%;" onclick="openBooking('${d.name}')">Book Appointment</button>
+                    </div>
+                `).join('');
+            }
+            // Fix: The original HTML for 'doc-grid' might just be a div with class 'doc-grid'.
+            // Let's use a robust renderDoctors that finds by class if id is missing.
+
+            // --- UI HELPERS ---
+            function updateNavState() {
+                const backBtn = document.getElementById('nav-controls');
+                if (currentView === 'home') {
+                    backBtn.style.display = 'none';
+                } else {
+                    backBtn.style.display = 'block';
+                }
+            }
+
+            function goBack() {
+                if (currentView === 'assessment' && assessmentStep > 0) {
+                    // Logic to go back steps? Or just back to home?
+                    // Implementation: If in steps, go back one step.
+                    if (assessmentStep > 0) {
+                        proceedAssessment(assessmentStep - 1);
+                        return;
+                    }
+                }
+                navigate('home');
+            }
+
+            function toggleSelection(type, id, card) {
+                const checkbox = card.querySelector('input');
+                const index = selections[type].indexOf(id);
+
+                if (index === -1) {
+                    selections[type].push(id);
+                    card.classList.add('selected');
+                    checkbox.checked = true;
+
+                    // CRITICAL CHECK
+                    if (type === 'symptoms') {
+                        const symptom = symptomsDB.find(s => s.id === id);
+                        if (symptom && symptom.critical) {
+                            showCriticalAlert(symptom);
+                        }
+                    }
+
+                } else {
+                    selections[type].splice(index, 1);
+                    card.classList.remove('selected');
+                    checkbox.checked = false;
+                }
+            }
+
+            function filterSymptoms() {
+                const query = document.getElementById('symptom-search').value.toLowerCase();
+                const cards = document.querySelectorAll('#symptoms-grid .option-card');
+
+                cards.forEach(card => {
+                    const name = card.querySelector('h4').innerText.toLowerCase();
+                    if (name.includes(query)) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            function showConditionModal() {
+                // Determine if we need to show a modal or just go to step 2.
+                // Based on UI structure, Step 2 is the History Check view.
+                proceedAssessment(2);
+            }
+
+            // Re-implementing renderDoctors properly to match assumed HTML
+            // in window.onload we called renderDoctors()
+            // We need to define it.
+
+            /* Overwriting renderDoctors to be safe */
+            window.renderDoctors = function () {
+                const grid = document.querySelector('.doc-grid');
+                if (!grid) return;
+                grid.innerHTML = doctorsDB.map(d => `
+                    <div class="doc-card">
+                        <img src="${d.img}" class="doc-img" alt="${d.name}">
+                        <h3>${d.name}</h3>
+                        <p style="color:var(--primary); font-weight:600;">${d.type}</p>
+                        <p><i class="fas fa-briefcase"></i> ${d.exp} Experience</p>
+                        <button class="btn btn-outline" style="margin-top:15px; width:100%;" onclick="openBooking('${d.name}')">Book Appointment</button>
+                    </div>
+                `).join('');
+            }
+
+            // --- DYNAMIC PRESCRIPTION LOGIC ---
+            // --- DYNAMIC PRESCRIPTION LOGIC ---
+            // --- DYNAMIC PRESCRIPTION LOGIC ---
+            // --- DYNAMIC PRESCRIPTION LOGIC ---
+            // --- DYNAMIC PRESCRIPTION LOGIC ---
+            function calculateDosage(medString, age) {
+                // SEIZURE PROTOCOL — age-specific anticonvulsant regimen
+                if (medString === "SEIZURE_PROTOCOL") {
+                    if (age < 2) {
+                        // Neonates & Infants
+                        return "⚠️ EMERGENCY — Call Ambulance (102). While waiting: Phenobarbital IM 20mg/kg (Hospital only). First-aid: Recovery position, do NOT put anything in mouth, do NOT restrain.";
+                    } else if (age < 6) {
+                        // Toddlers (2–5 yrs)
+                        return "⚠️ EMERGENCY — Call Ambulance (102). Diazepam Rectal Solution 5mg (0.5mg/kg) — to be given by trained caregiver. Hospital follow-up for Phenobarbital Syrup 3–5mg/kg/day. Do NOT give tablets.";
+                    } else if (age < 12) {
+                        // Children (6–11 yrs)
+                        return "⚠️ EMERGENCY — Call Ambulance (102). Diazepam Rectal Gel 10mg (if available) for acute seizure. Long-term: Clobazam 5mg (half-tablet) or Valproic Acid Syrup 10mg/kg/day (as prescribed by Neurologist).";
+                    } else if (age < 18) {
+                        // Teenagers (12–17 yrs)
+                        return "⚠️ EMERGENCY — Call Ambulance (102). Acute: Diazepam 10mg IV/IM (hospital). Long-term (Neurologist prescribed): Sodium Valproate 200mg twice daily OR Levetiracetam 250mg twice daily. No driving/heights until seizure-free for 1 year.";
+                    } else if (age < 60) {
+                        // Adults (18–59 yrs)
+                        return "⚠️ EMERGENCY — Call Ambulance (102). Acute: Lorazepam 4mg IV (hospital) OR Diazepam 10mg IV. Long-term (Neurologist prescribed): Sodium Valproate 500mg twice daily OR Levetiracetam 500mg twice daily OR Carbamazepine 200mg twice daily. Avoid alcohol, ensure 8hrs sleep.";
+                    } else {
+                        // Elderly (60+ yrs)
+                        return "⚠️ EMERGENCY — Call Ambulance (102). Acute: Lorazepam 2mg IV (hospital, reduced dose for elderly). Long-term (Neurologist prescribed): Levetiracetam 250mg twice daily (preferred in elderly — fewer drug interactions) OR Lamotrigine 25mg (titrate slowly). Monitor for drowsiness & fall risk.";
+                    }
+                }
+
+                // External meds check
+                const isExternal = medString.includes("Gel") || medString.includes("Cream") || medString.includes("Drops") || medString.includes("Ointment") || medString.includes("Spray") || medString.includes("Inhaler") || medString.includes("Mask");
+                if (isExternal) {
+                    if (age < 2) return medString + " (Apply very sparingly / Consult Pediatrician)";
+                    if (age < 12) return medString + " (Apply sparingly)";
+                    return medString;
+                }
+
+                // 1. INFANT LOGIC (< 2 Years)
+                if (age < 2) {
+                    // Force Drops or Syrup with very low dose
+                    if (medString.includes("Paracetamol") || medString.includes("Ibuprofen")) {
+                        return "Paracetamol Paediatric Drops (15mg/kg) - Consult Doctor for exact dose";
+                    }
+                    if (medString.includes("Cetirizine")) {
+                        return "Cetirizine Drops (2.5mg)";
+                    }
+                    if (medString.includes("Syrup") || medString.includes("solution")) {
+                        return medString.split(' ')[0] + " Drops (0.5ml - Consult Doctor)";
+                    }
+                    // Default safe fallback
+                    return "Consult Pediatrician (Tablet unsafe)";
+                }
+
+                // 2. TODDLER LOGIC (2 - 5 Years)
+                if (age >= 2 && age < 6) {
+                    // Prefer Syrup
+                    if (medString.includes("Paracetamol")) {
+                        return "Paracetamol Syrup (120mg/5ml) - 5ml";
+                    }
+                    if (medString.includes("Ibuprofen")) {
+                        return "Ibuprofen Syrup (100mg/5ml) - 5ml";
+                    }
+                    if (medString.includes("Cetirizine")) {
+                        return "Cetirizine Syrup (2.5mg/5ml) - 2.5ml";
+                    }
+                    // Regex for "Xmg" replacement if not specific syrup
+                    const mgRegex = /(\d+)\s?mg/gi;
+                    return medString.replace(mgRegex, (match, p1) => {
+                        let dose = parseInt(p1);
+                        return Math.round(dose * 0.25) + "mg (Syrup form preferred)";
+                    });
+                }
+
+                // 3. CHILD LOGIC (6 - 11 Years)
+                if (age >= 6 && age < 12) {
+                    const mgRegex = /(\d+)\s?mg/gi;
+                    let calculated = medString.replace(mgRegex, (match, p1) => {
+                        let dose = parseInt(p1);
+                        return Math.round(dose * 0.5) + "mg";
+                    });
+                    if (calculated === medString) return medString + " (Junior Dose / Syrup)"; // Fallback
+                    return calculated + " (Junior Tablet/Syrup)";
+                }
+
+                // 4. SENIOR LOGIC (> 60 Years)
+                if (age >= 60) {
+                    const mgRegex = /(\d+)\s?mg/gi;
+                    let calculated = medString.replace(mgRegex, (match, p1) => {
+                        let dose = parseInt(p1);
+                        return Math.round(dose * 0.8) + "mg";
+                    });
+                    return calculated + " (Geriatric Adjustment)";
+                }
+
+                // ADULT (Standard)
+                return medString;
+            }
+
+            function getMedication(symptom, age, isPregnant, history = []) {
+                let med = symptom.meds;
+
+                // --- 1. HISTORICAL OVERRIDES ---
+                if (history.includes('kidney') || history.includes('ulcers')) {
+                    if (med.includes("Ibuprofen") || med.includes("Aspirin") || med.includes("Naproxen") || med.includes("Diclofenac") || med.includes("Ketorolac")) {
+                        med = "Paracetamol 500mg";
+                    }
+                }
+
+                if (history.includes('liver')) {
+                    if (med.includes("Paracetamol")) {
+                        med = "Paracetamol 250mg (Liver Caution)";
+                    }
+                }
+
+                if (history.includes('diabetes')) {
+                    if (med.includes("Syrup")) {
+                        med = med.replace("Syrup", "Syrup (Sugar-Free)");
+                    }
+                }
+
+                if (history.includes('bp') || history.includes('heart')) {
+                    if (med.includes("Decongestants")) {
+                        med = "Saline Nasal Spray";
+                    }
+                }
+
+                if (history.includes('asthma')) {
+                    if (med.includes("Ibuprofen") || med.includes("Aspirin")) {
+                        med = "Paracetamol 500mg";
+                    }
+                }
+
+                // --- 2. PREGNANCY OVERRIDES (Strict) ---
+                if (isPregnant) {
+                    if (symptom.id === "fever" || symptom.id === "headache") return "Paracetamol 500mg (Safe in Pregnancy)";
+                    if (symptom.id === "acidity") return "Antacids (Gelusil)";
+                    if (symptom.id === "seizure") return "⚠️ EMERGENCY — Call Ambulance (102). MOST anticonvulsants (Valproate, Phenytoin) are teratogenic. ONLY Levetiracetam 500mg or Lamotrigine 50mg are relatively safer — but MUST be managed by a Neurologist + Gynecologist together. Do NOT self-medicate.";
+
+                    const isExternal = med.includes("Gel") || med.includes("Cream") || med.includes("Drops") || med.includes("Ointment") || med.includes("Spray");
+                    if (isExternal) return med;
+
+                    return "Consult Gynecologist (Meds may be unsafe)";
+                }
+
+                // --- 3. AGE CALCULATION ---
+                return calculateDosage(med, age);
+            }
+
+            // --- ADMIN & DATA PERSISTENCE ---
+            function savePatientData(date, profile, symptoms, risk) {
+                const record = {
+                    date: date,
+                    name: profile.name,
+                    age: profile.age,
+                    sex: profile.sex,
+                    mobile: profile.mobile,
+                    symptoms: symptoms.map(s => s.name).join(", "),
+                    risk: risk ? "HIGH" : "LOW"
+                };
+
+                let patients = JSON.parse(localStorage.getItem('admin_patients')) || [];
+                patients.unshift(record); // Add to top
+                localStorage.setItem('admin_patients', JSON.stringify(patients));
+            }
+
+            function saveBookingData(docName) {
+                let bookings = JSON.parse(localStorage.getItem('admin_bookings')) || {};
+                if (!bookings[docName]) bookings[docName] = 0;
+                bookings[docName]++;
+                localStorage.setItem('admin_bookings', JSON.stringify(bookings));
+            }
+
+            function checkAdminLogin() {
+                const u = document.getElementById('admin-user').value;
+                const p = document.getElementById('admin-pass').value;
+                if (u === "AZHAAN" && p === "7878") {
+                    document.getElementById('login-error').style.display = 'none';
+                    navigate('admin-dashboard');
+                    renderAdminDashboard();
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            }
+
+            function adminLogout() {
+                navigate('home');
+            }
+
+            function renderAdminDashboard() {
+                const patients = JSON.parse(localStorage.getItem('admin_patients')) || [];
+                const bookings = JSON.parse(localStorage.getItem('admin_bookings')) || {};
+
+                // Stats
+                document.getElementById('total-patients').innerText = patients.length;
+                const totalB = Object.values(bookings).reduce((a, b) => a + b, 0);
+                document.getElementById('total-bookings').innerText = totalB;
+
+                // Doctor List
+                const docList = document.getElementById('admin-doc-list');
+                let docHTML = '';
+                doctorsDB.forEach(d => {
+                    const count = bookings[d.name] || 0;
+                    docHTML += `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 12px;">${d.name}</td>
+                            <td style="padding: 12px; text-align: center;">${d.type}</td>
+                            <td style="padding: 12px; text-align: center; font-weight: bold;">${count}</td>
+                        </tr>
+                    `;
+                });
+                docList.innerHTML = docHTML;
+
+                // Patient List (Last 10)
+                const patList = document.getElementById('admin-patient-list');
+                patList.innerHTML = patients.slice(0, 10).map(p => `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 12px;">${p.date}</td>
+                        <td style="padding: 12px;">
+                            <strong>${p.name}</strong><br>
+                            <span style="font-size:0.8rem; color:#777;">${p.age}/${p.sex}</span><br>
+                            <span style="font-size:0.8rem; color:var(--primary);">+91 ${p.mobile || 'N/A'}</span>
+                        </td>
+                        <td style="padding: 12px; font-size: 0.9rem;">${p.symptoms}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; background: ${p.risk === 'HIGH' ? '#ffe5e5' : '#e5ffe5'}; color: ${p.risk === 'HIGH' ? 'red' : 'green'};">
+                                ${p.risk}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            // --- FINAL RESULT GENERATION ---
+            function finalizeResult(skipHistory = false) {
+                if (skipHistory) selections.history = [];
+                proceedAssessment(3); // Go to step 3
+
+                const isHighRisk = selections.history.length > 0;
+                const container = document.getElementById('results-container');
+                const banner = document.getElementById('result-banner');
+
+                // 1. Banner
+                if (isHighRisk) {
+                    banner.innerHTML = `
+                    <div class="risk-banner risk-high">
+                        <i class="fas fa-exclamation-circle"></i> HIGH RISK DETECTED <br>
+                        <span style="font-weight:400; font-size:1rem;">Professional Consultation Strongly Recommended</span>
+                    </div>
+                `;
+                } else {
+                    banner.innerHTML = `
+                    <div class="risk-banner risk-low">
+                        <i class="fas fa-check-circle"></i> LOW RISK <br>
+                        <span style="font-weight:400; font-size:1rem;">Home care remedies suggested.</span>
+                    </div>
+                `;
+                }
+
+                // 2. Generate Prescription
+                const date = new Date().toLocaleDateString();
+                const selectedSyms = symptomsDB.filter(s => selections.symptoms.includes(s.id));
+                const selectedHist = historyDB.filter(h => selections.history.includes(h.id));
+
+                // Save Data (Admin)
+                savePatientData(date, patientProfile, selectedSyms, isHighRisk);
+
+                let rxHTML = '';
+                let dietHTML = '';
+                let adviceHTML = '';
+
+                // Generate Dynamic Rx
+                selectedSyms.forEach(s => {
+                    const dynamicMed = getMedication(s, patientProfile.age, patientProfile.pregnant, selections.history); // Mod: Pass history
+                    rxHTML += `<div class="rx-item"><span><strong>${dynamicMed}</strong></span> <span style="color:#666; font-size:0.9rem;">(for ${s.name})</span></div>`;
+                    dietHTML += `<li>${s.diet} <span style="color:#666;">(for ${s.name})</span></li>`;
+                    adviceHTML += `<li>${s.advice}</li>`;
+                });
+
+                // Alerts for History
+                let alertHTML = '';
+                if (isHighRisk) {
+                    alertHTML = `<div class="rx-section" style="border: 1px solid red; padding: 10px; border-radius: 5px;">
+                    <div class="rx-title" style="color:red; border-bottom-color:red;">⚠️ Critical Context</div>
+                    <ul style="list-style: square; padding-left: 20px; color: #a00;">
+                        ${selectedHist.map(h => `<li>Patient has history of <strong>${h.name}</strong> - Consult ${h.specialist} immediately.</li>`).join('')}
+                    </ul>
+                </div>`;
+                }
+
+                // Warnings for Age
+                if (patientProfile.age > 60) {
+                    alertHTML += `<div class="rx-section" style="border: 1px solid orange; padding: 10px; border-radius: 5px; margin-top:10px;">
+                    <div class="rx-title" style="color:orange; border-bottom-color:orange;">⚠️ Age Warning</div>
+                    <p style="font-size:0.9rem;">Patient is over 60. Dosage has been adjusted effectively by AI logic.</p>
+                </div>`;
+                }
+                if (patientProfile.pregnant) {
+                    alertHTML += `<div class="rx-section" style="border: 1px solid #d63384; padding: 10px; border-radius: 5px; margin-top:10px;">
+                    <div class="rx-title" style="color:#d63384; border-bottom-color:#d63384;">⚠️ Pregnancy Alert</div>
+                    <p style="font-size:0.9rem;">Medications filtered for pregnancy safety. Please consult OBGYN.</p>
+                </div>`;
+                }
+
+                // Prescription Sheet HTML
+                container.innerHTML = `
+                <div class="prescription-sheet">
+                    <div class="rx-header">
+                        <div class="rx-logo">
+                            <i class="fas fa-file-medical-alt"></i> MediCure AI <br><span style="font-size: 0.8rem; font-weight: normal; margin-left:10px;">e-Prescription</span>
+                        </div>
+                        <div class="rx-info">
+                            <p><strong>Date:</strong> ${date}</p>
+                            <p><strong>Date:</strong> ${date}</p>
+                            <p><strong>Patient:</strong> ${patientProfile.name} (${patientProfile.age}yrs / ${patientProfile.sex})</p>
+                            <p><strong>Mobile:</strong> +91 ${patientProfile.mobile}</p>
+                            <p><strong>ID:</strong> #${Math.floor(Math.random() * 100000)}</p>
+                        </div>
+                    </div>
+
+                    ${alertHTML}
+
+                    <div class="rx-section">
+                        <div class="rx-title">Rx <span style="font-size:0.8rem; text-transform:none; font-weight:normal;">(Medications)</span></div>
+                        ${rxHTML || '<p>No specific medication required.</p>'}
+                    </div>
+
+                    <div class="rx-section">
+                        <div class="rx-title">Dietary Plan</div>
+                        <ul style="list-style: circle; padding-left: 20px;">
+                            ${dietHTML || '<li>Maintain a balanced diet.</li>'}
+                        </ul>
+                    </div>
+
+                    <div class="rx-section">
+                        <div class="rx-title">General Advice</div>
+                        <ul style="list-style: circle; padding-left: 20px;">
+                            ${adviceHTML || '<li>Rest well.</li>'}
+                        </ul>
+                    </div>
+
+                    <div class="rx-footer">
+                        <div>
+                            <p><strong>Disclaimer:</strong> AI generated advice.</p>
+                            <p>Not a substitute for professional medical help.</p>
+                        </div>
+                        <div style="text-align:right;">
+                            <p>_______________________</p>
+                            <p>Digital Signature</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }
+            // --- UTILS ---
+            function openBooking(name) {
+                window.selectedDoc = name;
+                document.getElementById('modal-doc-name').innerText = name;
+                document.getElementById('booking-modal').style.display = 'flex';
+            }
+            function closeModal(id) {
+                document.getElementById(id).style.display = 'none';
+            }
+            function confirmBooking(e) {
+                e.preventDefault();
+                alert(`Appointment Booked with ${window.selectedDoc}!\nWe will contact you shortly.`);
+                saveBookingData(window.selectedDoc);
+                closeModal('booking-modal');
+            }
+            function printReport() {
+                window.print();
+            }
+
+            // --- CRITICAL ALERT LOGIC ---
+            function showCriticalAlert(symptom) {
+                const age = patientProfile.age || "Unknown";
+                const isPregnant = patientProfile.pregnant;
+                // Note: History is likely empty at this stage (Step 1), but we pass it anyway in case we enhance flow later.
+                const medicine = getMedication(symptom, age === "Unknown" ? 30 : age, isPregnant, selections.history);
+
+                document.getElementById('crit-disease').innerText = symptom.disease;
+                document.getElementById('crit-age').innerText = age;
+                document.getElementById('crit-med').innerText = medicine;
+
+                document.getElementById('critical-modal').style.display = 'flex';
+            }
+
+            function closeCriticalModal() {
+                document.getElementById('critical-modal').style.display = 'none';
+            }
+
+            // =============================================
+            // --- NEARBY HOSPITALS MAP (Leaflet + Overpass API) ---
+            // =============================================
+            let nearbyMap = null;
+            let nearbyMarkers = [];
+
+            function initNearbyMap() {
+                const statusBar = document.getElementById('map-status-bar');
+                const statusText = document.getElementById('map-status-text');
+                const locateBtn = document.getElementById('locate-btn');
+
+                statusBar.className = 'map-status-bar loading';
+                statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> &nbsp; Getting your location...';
+                locateBtn.disabled = true;
+                locateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...';
+
+                if (!navigator.geolocation) {
+                    statusBar.className = 'map-status-bar error';
+                    statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> &nbsp; Geolocation is not supported by your browser.';
+                    locateBtn.disabled = false;
+                    locateBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Detect My Location &amp; Search';
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        statusText.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> &nbsp; Location found! Searching nearby facilities...';
+                        setupLeafletMap(lat, lon);
+                        fetchNearbyFacilities(lat, lon);
+                    },
+                    function (error) {
+                        statusBar.className = 'map-status-bar error';
+                        let msg = 'Location access denied.';
+                        if (error.code === 1) msg = 'Permission denied. Please allow location access in your browser settings.';
+                        else if (error.code === 2) msg = 'Location unavailable. Check your GPS/network.';
+                        else if (error.code === 3) msg = 'Location request timed out. Try again.';
+                        statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> &nbsp;' + msg;
+                        locateBtn.disabled = false;
+                        locateBtn.innerHTML = '<i class="fas fa-redo"></i> Try Again';
+                    },
+                    { timeout: 12000, enableHighAccuracy: true }
+                );
+            }
+
+            function setupLeafletMap(lat, lon) {
+                // Destroy old map if navigating back
+                if (nearbyMap) {
+                    nearbyMap.remove();
+                    nearbyMap = null;
+                    nearbyMarkers = [];
+                }
+
+                nearbyMap = L.map('map-container').setView([lat, lon], 14);
+
+                // OpenStreetMap Tiles (completely free)
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                    maxZoom: 19
+                }).addTo(nearbyMap);
+
+                // User location marker (purple)
+                const userIcon = L.divIcon({
+                    className: '',
+                    html: `<div style="width:18px;height:18px;background:#6f42c1;border:3px solid white;border-radius:50%;box-shadow:0 0 0 4px rgba(111,66,193,0.3);"></div>`,
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9]
+                });
+                L.marker([lat, lon], { icon: userIcon })
+                    .addTo(nearbyMap)
+                    .bindPopup('<b>📍 You are here</b>')
+                    .openPopup();
+            }
+
+            function fetchNearbyFacilities(lat, lon) {
+                const radius = 5000; // 5km radius
+                // Overpass API query for hospitals, clinics, doctors, pharmacies, first-aid
+                const query = `
+                    [out:json][timeout:25];
+                    (
+                        node["amenity"="hospital"](around:${radius},${lat},${lon});
+                        way["amenity"="hospital"](around:${radius},${lat},${lon});
+                        node["amenity"="clinic"](around:${radius},${lat},${lon});
+                        way["amenity"="clinic"](around:${radius},${lat},${lon});
+                        node["amenity"="doctors"](around:${radius},${lat},${lon});
+                        node["amenity"="pharmacy"](around:${radius},${lat},${lon});
+                        node["amenity"="first_aid"](around:${radius},${lat},${lon});
+                        node["healthcare"](around:${radius},${lat},${lon});
+                        way["healthcare"](around:${radius},${lat},${lon});
+                    );
+                    out center;`;
+
+                fetch('https://overpass-api.de/api/interpreter', {
+                    method: 'POST',
+                    body: query
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        renderFacilitiesOnMap(data.elements, lat, lon);
+                    })
+                    .catch(err => {
+                        const statusBar = document.getElementById('map-status-bar');
+                        const statusText = document.getElementById('map-status-text');
+                        const locateBtn = document.getElementById('locate-btn');
+                        statusBar.className = 'map-status-bar error';
+                        statusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> &nbsp; Failed to fetch facilities. Check your internet connection and try again.';
+                        locateBtn.disabled = false;
+                        locateBtn.innerHTML = '<i class="fas fa-redo"></i> Try Again';
+                    });
+            }
+
+            function renderFacilitiesOnMap(elements, userLat, userLon) {
+                const statusBar = document.getElementById('map-status-bar');
+                const statusText = document.getElementById('map-status-text');
+                const locateBtn = document.getElementById('locate-btn');
+                const facilityList = document.getElementById('facility-list');
+                facilityList.innerHTML = '';
+
+                if (!elements || elements.length === 0) {
+                    statusBar.className = 'map-status-bar error';
+                    statusText.innerHTML = '<i class="fas fa-search"></i> &nbsp; No facilities found within 5km. Try moving to an area with better coverage.';
+                    locateBtn.disabled = false;
+                    locateBtn.innerHTML = '<i class="fas fa-redo"></i> Try Again';
+                    return;
+                }
+
+                // De-duplicate and extract unique, named facilities
+                const seen = new Set();
+                const facilities = [];
+                elements.forEach(el => {
+                    const name = el.tags && (el.tags.name || el.tags['name:en']);
+                    if (!name) return; // Skip unnamed
+                    if (seen.has(name)) return;
+                    seen.add(name);
+
+                    const amenity = el.tags.amenity || el.tags.healthcare || 'other';
+                    const elLat = el.lat || (el.center && el.center.lat);
+                    const elLon = el.lon || (el.center && el.center.lon);
+                    if (!elLat || !elLon) return;
+
+                    const phone = el.tags.phone || el.tags['contact:phone'] || null;
+                    const dist = getDistanceKm(userLat, userLon, elLat, elLon);
+
+                    facilities.push({ name, amenity, lat: elLat, lon: elLon, phone, dist });
+                });
+
+                // Sort by distance
+                facilities.sort((a, b) => a.dist - b.dist);
+
+                // Color map
+                const colorMap = {
+                    hospital: '#dc3545',
+                    clinic: '#007bff',
+                    doctors: '#007bff',
+                    pharmacy: '#28a745',
+                    first_aid: '#fd7e14',
+                    other: '#fd7e14'
+                };
+                const iconMap = {
+                    hospital: '🏥',
+                    clinic: '🩺',
+                    doctors: '👨‍⚕️',
+                    pharmacy: '💊',
+                    first_aid: '🩹',
+                    other: '➕'
+                };
+                const cardClassMap = {
+                    hospital: 'hospital',
+                    clinic: 'clinic',
+                    doctors: 'clinic',
+                    pharmacy: 'pharmacy',
+                };
+
+                facilities.slice(0, 30).forEach((f, i) => {
+                    const color = colorMap[f.amenity] || '#fd7e14';
+                    const emoji = iconMap[f.amenity] || '➕';
+                    const cardCls = cardClassMap[f.amenity] || 'other';
+
+                    // Leaflet marker
+                    const markerIcon = L.divIcon({
+                        className: '',
+                        html: `<div style="width:14px;height:14px;background:${color};border:2.5px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [14, 14],
+                        iconAnchor: [7, 7]
+                    });
+
+                    const phoneLink = f.phone ? `<br><a href="tel:${f.phone}" style="color:${color};">${f.phone}</a>` : '';
+                    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${f.lat},${f.lon}&travelmode=driving`;
+                    const marker = L.marker([f.lat, f.lon], { icon: markerIcon })
+                        .addTo(nearbyMap)
+                        .bindPopup(`
+                            <b>${emoji} ${f.name}</b><br>
+                            <span style="color:#888;font-size:0.85em;">${f.amenity.replace('_', ' ')}</span><br>
+                            ${f.dist.toFixed(2)} km away${phoneLink}<br><br>
+                            <a href="${mapsUrl}" target="_blank" style="display:inline-block;background:#007bff;color:white;padding:5px 12px;border-radius:20px;font-size:0.82rem;font-weight:600;text-decoration:none;">
+                                🧭 Navigate
+                            </a>
+                        `);
+
+                    nearbyMarkers.push(marker);
+
+                    // Facility list card
+                    const card = document.createElement('div');
+                    card.className = `facility-card ${cardCls}`;
+                    card.innerHTML = `
+                        <h4>${emoji} ${f.name}</h4>
+                        <p>${f.amenity.replace(/_/g, ' ')} &bull; ${f.dist.toFixed(2)} km away</p>
+                        ${f.phone ? `<p style="margin-top:4px;"><a href="tel:${f.phone}" style="color:var(--primary);" onclick="event.stopPropagation()">${f.phone}</a></p>` : ''}
+                        <a href="${mapsUrl}" target="_blank" onclick="event.stopPropagation()"
+                           style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#007bff;color:white;padding:7px 16px;border-radius:20px;font-size:0.82rem;font-weight:600;text-decoration:none;">
+                            🧭 Navigate
+                        </a>
+                    `;
+                    card.onclick = () => {
+                        nearbyMap.setView([f.lat, f.lon], 17);
+                        nearbyMarkers[i] && nearbyMarkers[i].openPopup();
+                        document.getElementById('map-container').scrollIntoView({ behavior: 'smooth' });
+                    };
+                    facilityList.appendChild(card);
+                });
+
+                const count = Math.min(facilities.length, 30);
+                statusBar.className = 'map-status-bar success';
+                statusText.innerHTML = `<i class="fas fa-check-circle"></i> &nbsp; Found ${count} facilities within 5km. Tap <b>🧭 Navigate</b> on any card to get directions.`;
+                locateBtn.disabled = false;
+                locateBtn.innerHTML = '<i class="fas fa-redo"></i> Refresh Search';
+            }
+
+            function getDistanceKm(lat1, lon1, lat2, lon2) {
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            }
+
+        </script>
+</body>
+
+</html>

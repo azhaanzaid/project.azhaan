@@ -1,0 +1,23 @@
+export const historyDB = [
+    { id: "diabetes", name: "Diabetes", icon: "fa-cube", risk: "HIGH", specialist: "Endocrinologist" },
+    { id: "bp", name: "Hypertension (BP)", icon: "fa-heartbeat", risk: "MEDIUM", specialist: "Cardiologist" },
+    { id: "heart", name: "Heart Disease", icon: "fa-heart-broken", risk: "HIGH", specialist: "Cardiologist" },
+    { id: "asthma", name: "Asthma", icon: "fa-lungs-virus", risk: "MEDIUM", specialist: "Pulmonologist" },
+    { id: "breath_copd", name: "COPD / Emphysema", icon: "fa-lungs", risk: "HIGH", specialist: "Pulmonologist" },
+    { id: "preg", name: "Pregnancy", icon: "fa-baby", risk: "HIGH", specialist: "Gynecologist" },
+    { id: "kidney", name: "Kidney Issues", icon: "fa-procedures", risk: "HIGH", specialist: "Nephrologist" },
+    { id: "cancer", name: "Cancer History", icon: "fa-ribbon", risk: "HIGH", specialist: "Oncologist" },
+    { id: "liver", name: "Liver / Cirrhosis", icon: "fa-flask", risk: "HIGH", specialist: "Hepatologist" },
+    { id: "stroke", name: "Stroke History", icon: "fa-wheelchair", risk: "HIGH", specialist: "Neurologist" },
+    { id: "epilepsy", name: "Epilepsy / Seizures", icon: "fa-bolt", risk: "HIGH", specialist: "Neurologist" },
+    { id: "thyroid", name: "Thyroid Disorder", icon: "fa-dna", risk: "MEDIUM", specialist: "Endocrinologist" },
+    { id: "arthritis", name: "Arthritis / Rheumatism", icon: "fa-bone", risk: "MEDIUM", specialist: "Rheumatologist" },
+    { id: "tb", name: "Tuberculosis (TB)", icon: "fa-viruses", risk: "HIGH", specialist: "Pulmonologist" },
+    { id: "pcos", name: "PCOS / PCOD", icon: "fa-venus", risk: "MEDIUM", specialist: "Gynecologist" },
+    { id: "anemia", name: "Severe Anemia", icon: "fa-tint", risk: "MEDIUM", specialist: "Hematologist" },
+    { id: "glaucoma", name: "Glaucoma", icon: "fa-eye", risk: "MEDIUM", specialist: "Ophthalmologist" },
+    { id: "ibd", name: "Crohn's / Colitis", icon: "fa-biohazard", risk: "HIGH", specialist: "Gastroenterologist" },
+    { id: "lupus", name: "Lupus / Autoimmune", icon: "fa-shield-virus", risk: "HIGH", specialist: "Rheumatologist" },
+    { id: "hiv", name: "HIV / AIDS", icon: "fa-virus", risk: "HIGH", specialist: "Immunologist" },
+    { id: "mental", name: "Depression / Bipolar", icon: "fa-head-side-virus", risk: "MEDIUM", specialist: "Psychiatrist" }
+];
